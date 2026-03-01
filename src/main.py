@@ -49,16 +49,15 @@ def get_surface_norm(p0, p1, p2):
 
 def get_brightness(lights, point, n, v, color, k_d, k_s, k_e):
     """Яркость точки"""
-    s = Vector(0, 0, 0)
+    s = 0
     for light in lights:
-        s += get_illuminance(light, point, n) * brdf(color, k_d, k_s, k_e, v, n, light, point)
+        s += get_illuminance(light, point, n).dot(brdf(color, k_d, k_s, k_e, v, n, light, point))
     return (1 / pi) * s
 
 
 def brdf(color, k_d, k_s, k_e, v, n, light, point):
     """Двунаправленная функция отражения (BRDF)"""
     s = point - light.point  # вектор от источника до точки
-    print(f"brdf: {color * (k_d + k_s * (get_h(v, s).dot(n)) ** k_e)}")
     return color * (k_d + k_s * (get_h(v, s).dot(n)) ** k_e)
 
 
