@@ -4,18 +4,30 @@ from pair import Pair
 from vector import Vector
 
 
-def get_intensity(light, Vector):
-    o = light.n.normalize()
-    s = (Vector - light.Vector).normalize()
-    cos_theta = max(0.0, o * s)
+def get_intensity(light, point):
+    """Сила излучения от источника света, до выбранной точки (в глобальных координатах)"""
+    n = light.n.normalize()
+    s = point - light.point  # вектор от источника до точки
+    cos_theta = max(0.0, s.normalize().dot(n))
     return light.intensity * cos_theta
 
 
-def illumination(intensity, cos_alpha, r):
-    return (intensity * cos_alpha) / (r * r)
+def get_illuminance(light, point, p0, p1, p2):
+    """Освещенность выбранной точки (в глобальных координатах) от источника света"""
+    i = get_intensity(light, point)
+
+    s = point - light.point  # вектор от источника до точки
+    r = s.length()  # расстояние от точки до источника
+
+    n = get_surface_norm(p0, p1, p2)  # нормаль поверхности
+
+    cos_alpha = max(0.0, s.normalize().dot(n))
+
+    return (i * cos_alpha) / (r * r)
 
 
 def loc_to_global(x, y, p0, p1, p2):
+    """Перевести локальные координаты в глобальные"""
     v1 = p1 - p0
     v2 = p2 - p0
 
@@ -26,7 +38,8 @@ def loc_to_global(x, y, p0, p1, p2):
     return p0 + (e1 * x + e2 * y)
 
 
-def get_normal(p0, p1, p2):
+def get_surface_norm(p0, p1, p2):
+    """Нормаль к поверхности, заданной тремя точками"""
     v1 = p1 - p0
     v2 = p2 - p0
 
@@ -35,26 +48,28 @@ def get_normal(p0, p1, p2):
     return numerator / denominator
 
 
-def brightness(Vector, v, light_sources):
+def brightness(lights, point, p0, p1, p2, v, color, k_d, k_s, k_e):
+    """Яркость точки"""
     s = 0
-    for light in light_sources:
-        s += illumination(Vector.intensity, light.intensity, v)
+    n = get_surface_norm(p0, p1, p2)
+    for light in lights:
+        s += get_illuminance(light, point, p0, p1, p2) * brdf(color, k_d, k_s, k_e, v, n, light, point)
     return (1 / pi) * s
 
 
-def brdf(color, k_d, k_s, k_e, h, n):
-    return color * (k_d + k_s * (h * n) ** k_e)
-
-
-def get_s(light, Vector):
-    return Vector - light
+def brdf(color, k_d, k_s, k_e, v, n, light, point):
+    """Двунаправленная функция отражения (BRDF)"""
+    s = point - light.point  # вектор от источника до точки
+    return color * (k_d + k_s * (get_h(v, s).dot(n)) ** k_e)
 
 
 def get_h(v, s):
+    """Средний вектор (между наблюдателем и источником света)"""
     return (v + s).normalize()
 
 
 def input_vec(name):
+    """Ввод вектора вида (x, y, z)"""
     while True:
         try:
             x, y, z = map(float, input(f"{name}: ").split())
@@ -63,16 +78,23 @@ def input_vec(name):
             print("Ошибка ввода")
 
 
-def input_float(name):
+def input_float(name, min_value=None, max_value=None):
+    """Ввод вещественного числа"""
     while True:
         try:
             x = float(input(f"{name}: "))
-            return x
+            if min_value is not None and x < min_value:
+                print(f"Значение должно быть не меньше {min_value}")
+            elif max_value is not None and x > max_value:
+                print(f"Значение должно быть не больше {max_value}")
+            else:
+                return x
         except ValueError:
             print("Ошибка ввода")
 
 
 def input_dots(count):
+    """Ввод набора точек вида (x, y)"""
     pairs = []
     for i in range(count):
         while True:
@@ -107,6 +129,6 @@ dots = input_dots(5)
 v = input_vec("V")
 color = input_vec("K (RGB)")
 
-k_d = input_float("k_d")
-k_s = input_float("k_s")
-k_e = input_float("k_e")
+k_d = input_float("k_d", min_value=0, max_value=1)
+k_s = input_float("k_s", min_value=0, max_value=1)
+k_e = input_float("k_e", min_value=0, max_value=1)
