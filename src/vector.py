@@ -40,6 +40,16 @@ class Vector:
         z = self.z / number
         return Vector(x, y, z)
 
+    def __eq__(self, other):
+        """Проверка эквивалентности векторов"""
+        if not isinstance(other, Vector):
+            return NotImplemented
+        return self.x == other.x and self.y == other.y and self.z == other.z
+
+    def __str__(self):
+        """Представление в виде строки"""
+        return f"Vector({self.x}, {self.y}, {self.z})"
+
     def vec_mul(self, other):
         """Векторное умножение"""
         x = self.y * other.z - self.z * other.y
