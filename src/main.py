@@ -1,6 +1,7 @@
+import os
+import json
 from math import pi
 from light_source import LightSource
-from pair import Pair
 from vector import Vector
 
 
@@ -12,14 +13,12 @@ def get_intensity(light, point):
     return light.intensity * cos_theta
 
 
-def get_illuminance(light, point, p0, p1, p2):
+def get_illuminance(light, point, n):
     """Освещенность выбранной точки (в глобальных координатах) от источника света"""
     i = get_intensity(light, point)
 
     s = point - light.point  # вектор от источника до точки
     r = s.length()  # расстояние от точки до источника
-
-    n = get_surface_norm(p0, p1, p2)  # нормаль поверхности
 
     cos_alpha = max(0.0, s.normalize().dot(n))
 
@@ -48,18 +47,18 @@ def get_surface_norm(p0, p1, p2):
     return numerator / denominator
 
 
-def brightness(lights, point, p0, p1, p2, v, color, k_d, k_s, k_e):
+def get_brightness(lights, point, n, v, color, k_d, k_s, k_e):
     """Яркость точки"""
-    s = 0
-    n = get_surface_norm(p0, p1, p2)
+    s = Vector(0, 0, 0)
     for light in lights:
-        s += get_illuminance(light, point, p0, p1, p2) * brdf(color, k_d, k_s, k_e, v, n, light, point)
+        s += get_illuminance(light, point, n) * brdf(color, k_d, k_s, k_e, v, n, light, point)
     return (1 / pi) * s
 
 
 def brdf(color, k_d, k_s, k_e, v, n, light, point):
     """Двунаправленная функция отражения (BRDF)"""
     s = point - light.point  # вектор от источника до точки
+    print(f"brdf: {color * (k_d + k_s * (get_h(v, s).dot(n)) ** k_e)}")
     return color * (k_d + k_s * (get_h(v, s).dot(n)) ** k_e)
 
 
@@ -82,53 +81,138 @@ def input_float(name, min_value=None, max_value=None):
     """Ввод вещественного числа"""
     while True:
         try:
-            x = float(input(f"{name}: "))
-            if min_value is not None and x < min_value:
+            num = float(input(f"{name}: "))
+            if min_value is not None and num < min_value:
                 print(f"Значение должно быть не меньше {min_value}")
-            elif max_value is not None and x > max_value:
+            elif max_value is not None and num > max_value:
                 print(f"Значение должно быть не больше {max_value}")
             else:
-                return x
+                return num
         except ValueError:
             print("Ошибка ввода")
 
 
-def input_dots(count):
-    """Ввод набора точек вида (x, y)"""
-    pairs = []
+def input_int(name, min_value=None, max_value=None):
+    """Ввод целого числа"""
+    while True:
+        try:
+            num = int(input(f"{name}: "))
+            if min_value is not None and num < min_value:
+                print(f"Значение должно быть не меньше {min_value}")
+            elif max_value is not None and num > max_value:
+                print(f"Значение должно быть не больше {max_value}")
+            else:
+                return num
+        except ValueError:
+            print("Ошибка ввода")
+
+
+def input_array(count, name):
+    """Ввод набора чисел"""
+    arr = []
     for i in range(count):
-        while True:
-            try:
-                x, y = map(float, input(f"x_{i + 1}, y_{i + 1}: ").split())
-                pairs.append(Pair(x, y))
-                break
-            except ValueError:
-                print("Ошибка ввода")
-    return pairs
+        number = input_float(f"{name}{i + 1}")
+        arr.append(number)
+    return arr
 
 
-i1 = input_vec("I_O1 (RGB)")
-i2 = input_vec("I_O2 (RGB)")
+def vec_from_dict(d):
+    """Создать Vector из словаря {x, y, z}"""
+    return Vector(d["x"], d["y"], d["z"])
 
-o1 = input_vec("O1")
-o2 = input_vec("O2")
 
-pl1 = input_vec("PL1")
-pl2 = input_vec("PL2")
+# Папка с ресурсами
+RESOURCES_DIR = "../resources"
 
-light1 = LightSource(pl1, i1, o1)
-light2 = LightSource(pl2, i2, o2)
-lights = [light1, light2]
+print("Выберите тип ввода:")
+print("1. Через файл")
+print("2. Ввести вручную")
+option = input_int("Тип ввода", min_value=1, max_value=2)
 
-p0 = input_vec("P0")
-p1 = input_vec("P1")
-p2 = input_vec("P2")
+# --- Чтение из файла ---
+if option == 1:
+    filename = input("Введите имя файла (например, data.json): ").strip()
+    path = os.path.join(RESOURCES_DIR, filename)
 
-dots = input_dots(5)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Файл {filename} не найден в папке {RESOURCES_DIR}")
 
-v = input_vec("V")
-color = input_vec("K (RGB)")
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-k_d = input_float("k_d", min_value=0, max_value=1)
-k_s = input_float("k_s", min_value=0, max_value=1)
-k_e = input_float("k_e", min_value=0, max_value=1)
+    # Источники света
+    i1 = vec_from_dict(data["i1"])
+    i2 = vec_from_dict(data["i2"])
+    o1 = vec_from_dict(data["o1"])
+    o2 = vec_from_dict(data["o2"])
+    pl1 = vec_from_dict(data["pl1"])
+    pl2 = vec_from_dict(data["pl2"])
+
+    light1 = LightSource(pl1, i1, o1)
+    light2 = LightSource(pl2, i2, o2)
+    lights = [light1, light2]
+
+    # Треугольник
+    p0 = vec_from_dict(data["p0"])
+    p1 = vec_from_dict(data["p1"])
+    p2 = vec_from_dict(data["p2"])
+
+    # Проверка на совпадение точек
+    while p0 == p1 or p0 == p2 or p1 == p2:
+        raise ValueError("Точки треугольника не должны совпадать")
+
+    # Координаты точек для расчета
+    xs = data["xs"]
+    ys = data["ys"]
+
+    # Вектор наблюдателя и цвет
+    v = vec_from_dict(data["v"])
+    color = vec_from_dict(data["k"])
+
+    # Параметры BRDF
+    k_d = data["k_d"]
+    k_s = data["k_s"]
+    k_e = data["k_e"]
+
+# --- Ввод вручную ---
+else:
+    i1 = input_vec("I_O1 (RGB)")
+    i2 = input_vec("I_O2 (RGB)")
+
+    o1 = input_vec("O1")
+    o2 = input_vec("O2")
+
+    pl1 = input_vec("PL1")
+    pl2 = input_vec("PL2")
+
+    light1 = LightSource(pl1, i1, o1)
+    light2 = LightSource(pl2, i2, o2)
+    lights = [light1, light2]
+
+    p0 = input_vec("P0")
+    p1 = input_vec("P1")
+    p2 = input_vec("P2")
+    while p0 == p1 or p0 == p2 or p1 == p2:
+        print("Точки треугольника не должны совпадать")
+        p0 = input_vec("P0")
+        p1 = input_vec("P1")
+        p2 = input_vec("P2")
+
+    xs = input_array(5, "X")
+    ys = input_array(5, "Y")
+
+    v = input_vec("V")
+    color = input_vec("K (RGB)")
+
+    k_d = input_float("k_d", min_value=0, max_value=1)
+    k_s = input_float("k_s", min_value=0, max_value=1)
+    k_e = input_float("k_e", min_value=0, max_value=1)
+
+# === Вычисление ===
+n = get_surface_norm(p0, p1, p2)
+for x in xs:
+    for y in ys:
+        point = loc_to_global(x, y, p0, p1, p2)
+        illuminance1 = get_illuminance(light1, point, n)
+        illuminance2 = get_illuminance(light2, point, n)
+        brightness = get_brightness(lights, point, n, v, color, k_d, k_s, k_e)
