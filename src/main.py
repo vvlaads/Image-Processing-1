@@ -47,19 +47,17 @@ def get_surface_norm(p0, p1, p2):
 
 def get_brightness(lights, point, n, v, color, k_d, k_s, k_e):
     """Яркость точки"""
-    v_dir = (v - point).normalize()
-    if v_dir.dot(n) <= 0:
-        return Vector(0, 0, 0)
-    r = 0
-    g = 0
-    b = 0
+    r, g, b = 0, 0, 0
     vec_v = point - v
     for light in lights:
-        illuminance_rgb = get_illuminance(light, point, n)
-        brdf_rgb = brdf(color, k_d, k_s, k_e, vec_v, n, light, point)
-        r += illuminance_rgb.x * brdf_rgb.x
-        g += illuminance_rgb.y * brdf_rgb.y
-        b += illuminance_rgb.z * brdf_rgb.z
+        v_dir = (v - point).normalize()
+        s = light.point - point
+        if v_dir.dot(s) > 0:
+            illuminance_rgb = get_illuminance(light, point, n)
+            brdf_rgb = brdf(color, k_d, k_s, k_e, vec_v, n, light, point)
+            r += illuminance_rgb.x * brdf_rgb.x
+            g += illuminance_rgb.y * brdf_rgb.y
+            b += illuminance_rgb.z * brdf_rgb.z
     r *= (1 / pi)
     g *= (1 / pi)
     b *= (1 / pi)
