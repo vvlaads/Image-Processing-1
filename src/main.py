@@ -253,7 +253,7 @@ else:
 # === Инициализация массивов ===
 illuminance1 = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
 illuminance2 = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
-brightness = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
+brightness = [[Vector(0.0, 0.0, 0.0) for _ in range(len(xs))] for _ in range(len(ys))]
 
 # === Вычисление ===
 n = get_surface_norm(p0, p1, p2)
