@@ -64,12 +64,15 @@ def get_h(v, s):
     return (v + s).normalize()
 
 
-def input_vec(name):
+def input_vec(name, min_value=None):
     """Ввод вектора вида (x, y, z)"""
     while True:
         try:
             x, y, z = map(float, input(f"{name}: ").split())
-            return Vector(x, y, z)
+            if min_value is not None and (x < min_value or y < min_value or z < min_value):
+                print(f"Значения должны быть не меньше {min_value}")
+            else:
+                return Vector(x, y, z)
         except ValueError:
             print("Ошибка ввода")
 
@@ -201,8 +204,8 @@ if option == 1:
 
 # --- Ввод вручную ---
 else:
-    i1 = input_vec("I_O1 (RGB)")
-    i2 = input_vec("I_O2 (RGB)")
+    i1 = input_vec("I_O1 (RGB)", min_value=0)
+    i2 = input_vec("I_O2 (RGB)", min_value=0)
 
     o1 = input_vec("O1")
     o2 = input_vec("O2")
@@ -227,7 +230,7 @@ else:
     ys = input_array(5, "Y")
 
     v = input_vec("V")
-    color = input_vec("K (RGB)")
+    color = input_vec("K (RGB)", min_value=0)
 
     k_d = input_float("k_d", min_value=0, max_value=1)
     k_s = input_float("k_s", min_value=0, max_value=1)
