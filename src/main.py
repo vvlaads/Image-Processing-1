@@ -17,9 +17,9 @@ def get_illuminance(light, point, n):
     """Освещенность выбранной точки (в глобальных координатах) от источника света"""
     i = get_intensity(light, point)
 
-    s = light.point - point  # вектор от точки до источника
+    s = light.point - point  # вектор от источника до точки
     r = s.length()  # расстояние от точки до источника
-    cos_alpha = abs(s.normalize().dot(n))
+    cos_alpha = max(0.0, s.normalize().dot(n))
     return (i * cos_alpha) / (r * r)
 
 
@@ -47,21 +47,35 @@ def get_surface_norm(p0, p1, p2):
 
 def get_brightness(lights, point, n, v, color, k_d, k_s, k_e):
     """Яркость точки"""
-    s = 0
+    v_dir = (v - point).normalize()
+    if v_dir.dot(n) <= 0:
+        return Vector(0, 0, 0)
+    r = 0
+    g = 0
+    b = 0
+    vec_v = point - v
     for light in lights:
-        s += get_illuminance(light, point, n).dot(brdf(color, k_d, k_s, k_e, v, n, light, point))
-    return (1 / pi) * s
+        illuminance_rgb = get_illuminance(light, point, n)
+        brdf_rgb = brdf(color, k_d, k_s, k_e, vec_v, n, light, point)
+        r += illuminance_rgb.x * brdf_rgb.x
+        g += illuminance_rgb.y * brdf_rgb.y
+        b += illuminance_rgb.z * brdf_rgb.z
+    r *= (1 / pi)
+    g *= (1 / pi)
+    b *= (1 / pi)
+    return Vector(r, g, b)
 
 
-def brdf(color, k_d, k_s, k_e, v, n, light, point):
+def brdf(color, k_d, k_s, k_e, vec_v, n, light, point):
     """Двунаправленная функция отражения (BRDF)"""
     s = point - light.point  # вектор от источника до точки
-    return color * (k_d + k_s * (get_h(v, s).dot(n)) ** k_e)
+    spec = max(0.0, get_h(vec_v, s).dot(n)) ** k_e
+    return color * (k_d + k_s * spec)
 
 
-def get_h(v, s):
+def get_h(vec_v, s):
     """Средний вектор (между наблюдателем и источником света)"""
-    return (v + s).normalize()
+    return Vector(0, 0, 0) - (vec_v + s).normalize()
 
 
 def input_vec(name, min_value=None):
