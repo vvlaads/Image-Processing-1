@@ -19,7 +19,7 @@ def get_illuminance(light, point, n):
 
     s = light.point - point  # вектор от точки до источника
     r = s.length()  # расстояние от точки до источника
-    cos_alpha = max(0.0, s.normalize().dot(n))
+    cos_alpha = abs(s.normalize().dot(n))
     return (i * cos_alpha) / (r * r)
 
 
