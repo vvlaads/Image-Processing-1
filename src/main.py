@@ -120,6 +120,34 @@ def vec_from_dict(d):
     return Vector(d["x"], d["y"], d["z"])
 
 
+def print_table_matrix(xs, ys, values, fmt="{:6.2f}", title=None):
+    """
+    xs - список значений по столбцам (X)
+    ys - список значений по строкам (Y)
+    values - двумерный массив размером len(ys) x len(xs)
+             values[i][j] соответствует ys[i], xs[j]
+    fmt - формат ячейки для чисел
+    title - заголовок таблицы (опционально)
+    """
+    if title:
+        print(title)
+    # Заголовок
+    header = "Y\\X | " + " | ".join(f"{x:6.2f}" for x in xs)
+    print(header)
+    print("-" * len(header))
+
+    for y_idx, y in enumerate(ys):
+        row_values = []
+        for x_idx in range(len(xs)):
+            val = values[y_idx][x_idx]
+            if isinstance(val, Vector):
+                row_values.append(f"({val.x:.2f},{val.y:.2f},{val.z:.2f})")
+            else:
+                row_values.append(fmt.format(val))
+        print(f"{y:6.2f} | " + " | ".join(row_values))
+    print()
+
+
 # Папка с ресурсами
 RESOURCES_DIR = "../resources"
 
@@ -207,11 +235,22 @@ else:
     k_s = input_float("k_s", min_value=0, max_value=1)
     k_e = input_float("k_e", min_value=0, max_value=1)
 
+# === Инициализация массивов ===
+illuminance1 = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
+illuminance2 = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
+brightness = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
+
 # === Вычисление ===
 n = get_surface_norm(p0, p1, p2)
-for x in xs:
-    for y in ys:
+for x_idx in range(len(xs)):
+    for y_idx in range(len(ys)):
+        x = xs[x_idx]
+        y = ys[y_idx]
         point = loc_to_global(x, y, p0, p1, p2)
-        illuminance1 = get_illuminance(light1, point, n)
-        illuminance2 = get_illuminance(light2, point, n)
-        brightness = get_brightness(lights, point, n, v, color, k_d, k_s, k_e)
+        illuminance1[y_idx][x_idx] = get_illuminance(light1, point, n)
+        illuminance2[y_idx][x_idx] = get_illuminance(light2, point, n)
+        brightness[y_idx][x_idx] = get_brightness(lights, point, n, v, color, k_d, k_s, k_e)
+
+print_table_matrix(xs, ys, illuminance1, title="E1")
+print_table_matrix(xs, ys, illuminance2, title="E2")
+print_table_matrix(xs, ys, brightness, title="L")
