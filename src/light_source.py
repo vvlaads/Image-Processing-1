@@ -11,4 +11,4 @@ class LightSource:
         """
         self.point = point
         self.intensity = intensity
-        self.n = n
+        self.n = n.normalize()
