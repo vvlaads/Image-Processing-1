@@ -7,9 +7,9 @@ from vector import Vector
 
 def get_intensity(light, point):
     """Сила излучения от источника света, до выбранной точки (в глобальных координатах)"""
-    n = light.n.normalize()
+    o = light.n
     s = point - light.point  # вектор от источника до точки
-    cos_theta = max(0.0, s.normalize().dot(n))
+    cos_theta = max(0.0, s.normalize().dot(o))
     return light.intensity * cos_theta
 
 
@@ -17,11 +17,9 @@ def get_illuminance(light, point, n):
     """Освещенность выбранной точки (в глобальных координатах) от источника света"""
     i = get_intensity(light, point)
 
-    s = point - light.point  # вектор от источника до точки
+    s = light.point - point  # вектор от точки до источника
     r = s.length()  # расстояние от точки до источника
-
     cos_alpha = max(0.0, s.normalize().dot(n))
-
     return (i * cos_alpha) / (r * r)
 
 
