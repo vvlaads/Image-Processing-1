@@ -233,7 +233,7 @@ else:
 
     k_d = input_float("k_d", min_value=0, max_value=1)
     k_s = input_float("k_s", min_value=0, max_value=1)
-    k_e = input_float("k_e", min_value=0, max_value=1)
+    k_e = input_float("k_e", min_value=0)
 
 # === Инициализация массивов ===
 illuminance1 = [[0.0 for _ in range(len(xs))] for _ in range(len(ys))]
