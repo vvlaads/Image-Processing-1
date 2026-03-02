@@ -69,5 +69,5 @@ class Vector:
         """Нормализованный вектор"""
         length = self.length()
         if length == 0:
-            raise ValueError("Cannot normalize zero vector")
+            return Vector(0, 0, 0)
         return self / length
